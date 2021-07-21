@@ -19,13 +19,13 @@ function datePlus(
 function getDispTime(date: DateTime, dateUnit: 'year' | 'month' | 'day') {
   switch (dateUnit) {
     case 'year':
-      return date.year;
+      return date.toFormat('yyyy');
     case 'month':
       return date.toFormat('yyyy LL');
     case 'day':
       return date.toISODate();
     default:
-      return date;
+      return '';
   }
 }
 

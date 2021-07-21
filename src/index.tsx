@@ -3,8 +3,9 @@ import { DateTime } from 'luxon';
 import TimeNode from './component/TimeNode';
 import ReactStyle from './interface/ReactStyle';
 import TimelineProps from './interface/Timeline';
-import { datePlus } from './services/util';
+import { datePlus, getDispTime } from './services/util';
 import TimeLevel from './interface/TimeLevel';
+import TimeNodeProps from './interface/TimeNode';
 
 // Please do not use types off of a default export module or else Storybook Docs will suffer.
 // see: https://github.com/storybookjs/storybook/issues/9556
@@ -68,7 +69,7 @@ export const Timeline: FC<TimelineProps> = ({
   );
   const [startTime, setStartTime] = useState(DateTime.fromMillis(initTime));
   const [perPage, setPerPage] = useState(0);
-  const [timeNodeArray, setTimeNodeArray] = useState<number[]>([]);
+  const [timeNodeArray, setTimeNodeArray] = useState<TimeNodeProps[]>([]);
   const [translateX, setTranslateX] = useState(0);
   const [transition, setTransition] = useState(true);
   const [clickX, setClickX] = useState<number | null>(null);
@@ -79,9 +80,29 @@ export const Timeline: FC<TimelineProps> = ({
       const count = Math.ceil(containerRef.current.offsetWidth / ITEM_WIDTH);
       setPerPage(count);
       setTranslateX(-count * ITEM_WIDTH);
-      setTimeNodeArray(Array.from(new Array(count * 3).keys()));
     }
   }, [containerRef]);
+
+  useEffect(() => {
+    if (perPage) {
+      let array: TimeNodeProps[] = [];
+      for (let index = 0; index < perPage * 3; index++) {
+        const dispTime = getDispTime(
+          datePlus(
+            startTime,
+            currentTimeLevel.dateUnit,
+            index * currentTimeLevel.amount
+          ),
+          currentTimeLevel.dateUnit
+        );
+        array.push({
+          displayTime: dispTime,
+          x: index * ITEM_WIDTH,
+        });
+      }
+      setTimeNodeArray(array);
+    }
+  }, [perPage, startTime, currentTimeLevel]);
 
   // 点击左右移动按钮
   const handleClickMoveButton = (next: boolean, e: React.MouseEvent) => {
@@ -186,10 +207,9 @@ export const Timeline: FC<TimelineProps> = ({
             />
             {timeNodeArray.map((item) => (
               <TimeNode
-                key={item}
-                index={item}
-                initTime={startTime}
-                timeLevel={currentTimeLevel}
+                key={item.x}
+                displayTime={item.displayTime}
+                x={item.x}
               />
             ))}
           </svg>

@@ -9,4 +9,14 @@ export default interface TimelineProps extends HTMLAttributes<HTMLDivElement> {
   // 时间轴默认开始时间
   initTime?: number;
   children?: ReactChild;
+  handleDateChanged?: DateChangedFunc;
+  handleSelectedDateChanged?: SelectedDateChangedFunc;
+}
+
+interface DateChangedFunc {
+  (startDate: number, endDate: number, amount: number): void;
+}
+
+interface SelectedDateChangedFunc {
+  (selectedDate: number): void;
 }
