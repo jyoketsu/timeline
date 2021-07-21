@@ -16,23 +16,36 @@ const ITEM_WIDTH = 100;
 const ANIME_TIME = 500;
 
 const classes: ReactStyle = {
-  wrapper: {
+  root: {
     position: 'relative',
+    width: '100%',
+    height: '100%',
+    overflow: 'hidden',
+  },
+  wrapper: {
     width: '100%',
     height: '100%',
     display: 'grid',
     gridTemplateRows: '1fr 56px',
-    overflow: 'hidden',
   },
   contentWrapper: {
     width: '100%',
     height: '100%',
+    minHeight: '360px',
+    backgroundColor: '#2C3C4E',
   },
   timelineWrapper: {
     width: '100%',
     height: '100%',
     backgroundColor: '#696969',
-    cursor: 'move',
+    // cursor: 'move',
+  },
+  verticalLine: {
+    position: 'absolute',
+    width: '5px',
+    height: '100%',
+    backgroundColor: '#C0C0C0',
+    top: '0',
   },
 };
 
@@ -58,6 +71,7 @@ export const Timeline: FC<TimelineProps> = ({
   const [timeNodeArray, setTimeNodeArray] = useState<number[]>([]);
   const [translateX, setTranslateX] = useState(0);
   const [transition, setTransition] = useState(true);
+  const [clickX, setClickX] = useState<number | null>(null);
 
   useEffect(() => {
     console.log('--------', containerRef);
@@ -70,8 +84,13 @@ export const Timeline: FC<TimelineProps> = ({
   }, [containerRef]);
 
   // 点击左右移动按钮
-  const handleClickMoveButton = (next?: boolean) => {
-    if (!transition) {
+  const handleClickMoveButton = (next: boolean, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (
+      !transition ||
+      translateX === 0 ||
+      translateX === -perPage * 2 * ITEM_WIDTH
+    ) {
       return;
     }
     // 移动一个元素的宽度
@@ -82,7 +101,7 @@ export const Timeline: FC<TimelineProps> = ({
       // 往右边到头
       (next && translateX + ITEM_WIDTH === 0) ||
       // 往左边到头
-      (!next && translateX - ITEM_WIDTH === -perPage * 2 * 100)
+      (!next && translateX - ITEM_WIDTH === -perPage * 2 * ITEM_WIDTH)
     ) {
       setTimeout(() => {
         setTransition(false);
@@ -103,7 +122,8 @@ export const Timeline: FC<TimelineProps> = ({
     }
   };
 
-  const handleChangeLevel = (zoomIn?: boolean) => {
+  const handleChangeLevel = (zoomIn: boolean, e: React.MouseEvent) => {
+    e.stopPropagation();
     const index = timeLevels.findIndex(
       (item) => item.name === currentTimeLevel.name
     );
@@ -116,16 +136,25 @@ export const Timeline: FC<TimelineProps> = ({
     setCurrentTimeLevel(timeLevels[zoomIn ? index + 1 : index - 1]);
   };
 
+  const handleClick = (event: React.MouseEvent) => {
+    if (containerRef && containerRef.current) {
+      setClickX(event.clientX - containerRef.current.offsetLeft);
+    }
+
+    // setClickX(event.nativeEvent.offsetX);
+  };
+
   return (
-    <div style={classes.wrapper} ref={containerRef}>
+    <div style={classes.root} ref={containerRef} onClick={handleClick}>
       <div
         style={{
-          width: '100%',
-          height: '100%',
-          transition: transition
-            ? `transform ${ANIME_TIME / 1000}s ease-out`
-            : 'unset',
-          transform: `translateX(${translateX}px)`,
+          ...classes.wrapper,
+          ...{
+            transition: transition
+              ? `transform ${ANIME_TIME / 1000}s ease-out`
+              : 'unset',
+            transform: `translateX(${translateX}px)`,
+          },
         }}
       >
         <div style={classes.contentWrapper}>{children}</div>
@@ -169,26 +198,39 @@ export const Timeline: FC<TimelineProps> = ({
       <div style={{ position: 'absolute', top: 0, left: 0 }}>
         <button
           style={{ width: '100px' }}
-          onClick={() => handleClickMoveButton()}
+          onClick={(e) => handleClickMoveButton(false, e)}
         >
           前
         </button>
         <button
           style={{ width: '100px' }}
-          onClick={() => handleClickMoveButton(true)}
+          onClick={(e) => handleClickMoveButton(true, e)}
         >
           后
         </button>
         <button
           style={{ width: '100px' }}
-          onClick={() => handleChangeLevel(true)}
+          onClick={(e) => handleChangeLevel(true, e)}
         >
           放大
         </button>
-        <button style={{ width: '100px' }} onClick={() => handleChangeLevel()}>
+        <button
+          style={{ width: '100px' }}
+          onClick={(e) => handleChangeLevel(false, e)}
+        >
           缩小
         </button>
       </div>
+      {clickX ? (
+        <div
+          style={{
+            ...classes.verticalLine,
+            ...{
+              left: `${clickX}px`,
+            },
+          }}
+        ></div>
+      ) : null}
     </div>
   );
 };

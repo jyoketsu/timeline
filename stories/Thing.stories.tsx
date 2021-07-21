@@ -26,4 +26,12 @@ const Template: Story<TimelineProps> = (args) => <Timeline {...args} />;
 // https://storybook.js.org/docs/react/workflows/unit-testing
 export const Default = Template.bind({});
 
-Default.args = {};
+Default.args = {
+  children: (
+    <div>
+      <h1>title</h1>
+      <h1>title</h1>
+      <h1>titletitletitletitletitletitletitletitletitletitle</h1>
+    </div>
+  ),
+};
