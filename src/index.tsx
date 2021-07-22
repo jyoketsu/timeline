@@ -6,6 +6,7 @@ import TimelineProps from './interface/Timeline';
 import { datePlus, getDispTime } from './services/util';
 import TimeLevel from './interface/TimeLevel';
 import TimeNodeProps from './interface/TimeNode';
+import Icon from './icon';
 
 // Please do not use types off of a default export module or else Storybook Docs will suffer.
 // see: https://github.com/storybookjs/storybook/issues/9556
@@ -30,6 +31,7 @@ const classes: ReactStyle = {
     gridTemplateRows: '1fr 56px',
   },
   contentWrapper: {
+    position: 'relative',
     width: '100%',
     height: '100%',
     minHeight: '360px',
@@ -43,14 +45,39 @@ const classes: ReactStyle = {
   },
   verticalLine: {
     position: 'absolute',
-    width: '5px',
+    width: '3px',
     height: '100%',
     backgroundColor: '#C0C0C0',
     top: '0',
   },
+  left: {
+    position: 'absolute',
+    left: '8px',
+    bottom: '60px',
+    cursor: 'pointer',
+  },
+  right: {
+    position: 'absolute',
+    right: '8px',
+    bottom: '60px',
+    cursor: 'pointer',
+  },
+  zoomIn: {
+    position: 'absolute',
+    top: '25px',
+    right: '8px',
+    cursor: 'pointer',
+  },
+  zoomOut: {
+    position: 'absolute',
+    top: '63px',
+    right: '8px',
+    cursor: 'pointer',
+  },
 };
 
 const defaultTimeLevels: TimeLevel[] = [
+  { name: 'hour', dateUnit: 'hour', amount: 1 },
   { name: 'day', dateUnit: 'day', amount: 1 },
   { name: 'week', dateUnit: 'day', amount: 7 },
   { name: 'month', dateUnit: 'month', amount: 1 },
@@ -61,13 +88,20 @@ const defaultTimeLevels: TimeLevel[] = [
 export const Timeline: FC<TimelineProps> = ({
   timeLevels = defaultTimeLevels,
   initTime = new Date().getTime(),
+  handleDateChanged,
+  handleSelectedDateChanged,
   children,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentTimeLevel, setCurrentTimeLevel] = useState<TimeLevel>(
     defaultTimeLevels[0]
   );
-  const [startTime, setStartTime] = useState(DateTime.fromMillis(initTime));
+  // 开始时间，设为传入时间的零点
+  const [startTime, setStartTime] = useState(
+    DateTime.fromMillis(
+      new Date(new Date(initTime).toLocaleDateString()).getTime()
+    )
+  );
   const [perPage, setPerPage] = useState(0);
   const [timeNodeArray, setTimeNodeArray] = useState<TimeNodeProps[]>([]);
   const [translateX, setTranslateX] = useState(0);
@@ -75,7 +109,7 @@ export const Timeline: FC<TimelineProps> = ({
   const [clickX, setClickX] = useState<number | null>(null);
 
   useEffect(() => {
-    console.log('--------', containerRef);
+    console.log('----containerRef----', containerRef);
     if (containerRef && containerRef.current) {
       const count = Math.ceil(containerRef.current.offsetWidth / ITEM_WIDTH);
       setPerPage(count);
@@ -87,22 +121,53 @@ export const Timeline: FC<TimelineProps> = ({
     if (perPage) {
       let array: TimeNodeProps[] = [];
       for (let index = 0; index < perPage * 3; index++) {
-        const dispTime = getDispTime(
-          datePlus(
-            startTime,
-            currentTimeLevel.dateUnit,
-            index * currentTimeLevel.amount
-          ),
-          currentTimeLevel.dateUnit
+        const time = datePlus(
+          startTime,
+          currentTimeLevel.dateUnit,
+          index * currentTimeLevel.amount
         );
+        const dispTime = getDispTime(time, currentTimeLevel.dateUnit);
         array.push({
+          time,
           displayTime: dispTime,
           x: index * ITEM_WIDTH,
         });
       }
       setTimeNodeArray(array);
+      if (handleDateChanged) {
+        const startDate = array[0].time?.toMillis();
+        const endDate = array[array.length - 1].time?.toMillis();
+        if (startDate && endDate) {
+          handleDateChanged(startDate, endDate, perPage);
+        }
+      }
     }
   }, [perPage, startTime, currentTimeLevel]);
+
+  useEffect(() => {
+    if (handleSelectedDateChanged && clickX) {
+      const ratio =
+        (clickX + Math.abs(translateX)) / (perPage * 3 * ITEM_WIDTH);
+      const startNode = timeNodeArray[0];
+      const endNode = timeNodeArray[timeNodeArray.length - 1];
+      if (startNode.time && endNode.time) {
+        const timeDiff =
+          datePlus(
+            endNode.time,
+            currentTimeLevel.dateUnit,
+            currentTimeLevel.amount
+          ).toMillis() - startNode.time.toMillis();
+        const clickTime =
+          datePlus(
+            startNode.time,
+            currentTimeLevel.dateUnit,
+            -currentTimeLevel.amount / 2
+          ).toMillis() +
+          timeDiff * ratio;
+        handleSelectedDateChanged(clickTime);
+      }
+    }
+  }, [clickX, translateX, perPage, timeNodeArray]);
 
   // 点击左右移动按钮
   const handleClickMoveButton = (next: boolean, e: React.MouseEvent) => {
@@ -215,32 +280,7 @@ export const Timeline: FC<TimelineProps> = ({
           </svg>
         </div>
       </div>
-      <div style={{ position: 'absolute', top: 0, left: 0 }}>
-        <button
-          style={{ width: '100px' }}
-          onClick={(e) => handleClickMoveButton(false, e)}
-        >
-          前
-        </button>
-        <button
-          style={{ width: '100px' }}
-          onClick={(e) => handleClickMoveButton(true, e)}
-        >
-          后
-        </button>
-        <button
-          style={{ width: '100px' }}
-          onClick={(e) => handleChangeLevel(true, e)}
-        >
-          放大
-        </button>
-        <button
-          style={{ width: '100px' }}
-          onClick={(e) => handleChangeLevel(false, e)}
-        >
-          缩小
-        </button>
-      </div>
+
       {clickX ? (
         <div
           style={{
@@ -251,6 +291,24 @@ export const Timeline: FC<TimelineProps> = ({
           }}
         ></div>
       ) : null}
+      <div
+        style={classes.left}
+        onClick={(e) => handleClickMoveButton(false, e)}
+      >
+        <Icon name="left" width={30} height={30} />
+      </div>
+      <div
+        style={classes.right}
+        onClick={(e) => handleClickMoveButton(true, e)}
+      >
+        <Icon name="right" width={30} height={30} />
+      </div>
+      <div style={classes.zoomIn} onClick={(e) => handleChangeLevel(true, e)}>
+        <Icon name="zoomIn" width={30} height={30} />
+      </div>
+      <div style={classes.zoomOut} onClick={(e) => handleChangeLevel(false, e)}>
+        <Icon name="zoomOut" width={30} height={30} />
+      </div>
     </div>
   );
 };

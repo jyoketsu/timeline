@@ -2,6 +2,7 @@ import React from 'react';
 import { Meta, Story } from '@storybook/react';
 import { Timeline } from '../src';
 import TimelineProps from '../src/interface/Timeline';
+import { DateTime } from 'luxon';
 
 const meta: Meta = {
   title: 'Timeline',
@@ -27,6 +28,20 @@ const Template: Story<TimelineProps> = (args) => <Timeline {...args} />;
 export const Default = Template.bind({});
 
 Default.args = {
+  handleSelectedDateChanged: (clickTime: number) => {
+    console.log(
+      '---handleSelectedDateChanged---',
+      DateTime.fromMillis(clickTime).toFormat('yyyy-LL-dd TT')
+    );
+  },
+  handleDateChanged: (startDate: number, endDate: number, amount: number) => {
+    console.log(
+      '---handleDateChanged---',
+      DateTime.fromMillis(startDate).toFormat('yyyy-LL-dd TT'),
+      DateTime.fromMillis(endDate).toFormat('yyyy-LL-dd TT'),
+      amount
+    );
+  },
   children: (
     <div>
       <h1>title</h1>
