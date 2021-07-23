@@ -24,6 +24,13 @@ const classes: ReactStyle = {
     height: '100%',
     overflow: 'hidden',
   },
+  mask: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  },
   wrapper: {
     width: '100%',
     height: '100%',
@@ -138,7 +145,7 @@ export const Timeline: FC<TimelineProps> = ({
         const startDate = array[0].time?.toMillis();
         const endDate = array[array.length - 1].time?.toMillis();
         if (startDate && endDate) {
-          handleDateChanged(startDate, endDate, perPage);
+          handleDateChanged(startDate, endDate, perPage, currentTimeLevel);
         }
       }
     }
@@ -223,15 +230,14 @@ export const Timeline: FC<TimelineProps> = ({
   };
 
   const handleClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
     if (containerRef && containerRef.current) {
-      setClickX(event.clientX - containerRef.current.offsetLeft);
+      setClickX(event.nativeEvent.offsetX);
     }
-
-    // setClickX(event.nativeEvent.offsetX);
   };
 
   return (
-    <div style={classes.root} ref={containerRef} onClick={handleClick}>
+    <div style={classes.root} ref={containerRef}>
       <div
         style={{
           ...classes.wrapper,
@@ -291,15 +297,13 @@ export const Timeline: FC<TimelineProps> = ({
           }}
         ></div>
       ) : null}
-      <div
-        style={classes.left}
-        onClick={(e) => handleClickMoveButton(false, e)}
-      >
+      <div style={classes.mask} onClick={handleClick}></div>
+      <div style={classes.left} onClick={(e) => handleClickMoveButton(true, e)}>
         <Icon name="left" width={30} height={30} />
       </div>
       <div
         style={classes.right}
-        onClick={(e) => handleClickMoveButton(true, e)}
+        onClick={(e) => handleClickMoveButton(false, e)}
       >
         <Icon name="right" width={30} height={30} />
       </div>

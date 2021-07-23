@@ -14,7 +14,12 @@ export default interface TimelineProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 interface DateChangedFunc {
-  (startDate: number, endDate: number, amount: number): void;
+  (
+    startDate: number,
+    endDate: number,
+    amount: number,
+    currentTimeLevel: TimeLevel
+  ): void;
 }
 
 interface SelectedDateChangedFunc {
