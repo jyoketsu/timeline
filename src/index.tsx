@@ -24,13 +24,6 @@ const classes: ReactStyle = {
     height: '100%',
     overflow: 'hidden',
   },
-  mask: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-  },
   wrapper: {
     width: '100%',
     height: '100%',
@@ -103,12 +96,7 @@ export const Timeline: FC<TimelineProps> = ({
   const [currentTimeLevel, setCurrentTimeLevel] = useState<TimeLevel>(
     defaultTimeLevels[0]
   );
-  // 开始时间，设为传入时间的零点
-  const [startTime, setStartTime] = useState(
-    DateTime.fromMillis(
-      new Date(new Date(initTime).toLocaleDateString()).getTime()
-    )
-  );
+  const [startTime, setStartTime] = useState(DateTime.fromMillis(initTime));
   const [perPage, setPerPage] = useState(0);
   const [timeNodeArray, setTimeNodeArray] = useState<TimeNodeProps[]>([]);
   const [translateX, setTranslateX] = useState(0);
@@ -116,7 +104,6 @@ export const Timeline: FC<TimelineProps> = ({
   const [clickX, setClickX] = useState<number | null>(null);
 
   useEffect(() => {
-    console.log('----containerRef----', containerRef);
     if (containerRef && containerRef.current) {
       const count = Math.ceil(containerRef.current.offsetWidth / ITEM_WIDTH);
       setPerPage(count);
@@ -127,9 +114,21 @@ export const Timeline: FC<TimelineProps> = ({
   useEffect(() => {
     if (perPage) {
       let array: TimeNodeProps[] = [];
+      // 使当前时间在时间轴中居中
+      let headTime = datePlus(
+        startTime,
+        currentTimeLevel.dateUnit,
+        -(Math.floor((perPage * 3) / 2) - 1) * currentTimeLevel.amount
+      );
+      // 如果timeLevel不是小时，最左侧开始时间设为零点
+      if (currentTimeLevel.dateUnit !== 'hour') {
+        headTime = DateTime.fromMillis(
+          new Date(headTime.toLocaleString()).getTime()
+        );
+      }
       for (let index = 0; index < perPage * 3; index++) {
         const time = datePlus(
-          startTime,
+          headTime,
           currentTimeLevel.dateUnit,
           index * currentTimeLevel.amount
         );
@@ -232,12 +231,12 @@ export const Timeline: FC<TimelineProps> = ({
   const handleClick = (event: React.MouseEvent) => {
     event.stopPropagation();
     if (containerRef && containerRef.current) {
-      setClickX(event.nativeEvent.offsetX);
+      setClickX(event.nativeEvent.offsetX + translateX);
     }
   };
 
   return (
-    <div style={classes.root} ref={containerRef}>
+    <div style={classes.root} ref={containerRef} onClick={handleClick}>
       <div
         style={{
           ...classes.wrapper,
@@ -297,7 +296,6 @@ export const Timeline: FC<TimelineProps> = ({
           }}
         ></div>
       ) : null}
-      <div style={classes.mask} onClick={handleClick}></div>
       <div style={classes.left} onClick={(e) => handleClickMoveButton(true, e)}>
         <Icon name="left" width={30} height={30} />
       </div>
