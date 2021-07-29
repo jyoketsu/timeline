@@ -2,6 +2,8 @@ import { DateTime } from 'luxon';
 
 export default interface TimeNodeProps {
   time?: DateTime;
-  displayTime: string;
+  displayTime?: string;
+  isKeyDate: boolean;
   x: number;
+  fill?: string;
 }

@@ -60,6 +60,8 @@ interface TimeLevel {
   name: string;
   dateUnit: 'year' | 'month' | 'day' | 'hour';
   amount: number;
+  // 能被keyDate个dateUnit整除，则为keyDate
+  keyDate: number;
 }
 ```
 
@@ -88,11 +90,16 @@ interface SelectedDateChangedFunc {
 
 ```js
 const defaultTimeLevels: TimeLevel[] = [
-  { name: 'hour', dateUnit: 'hour', amount: 1 },
-  { name: 'day', dateUnit: 'day', amount: 1 },
-  { name: 'week', dateUnit: 'day', amount: 7 },
-  { name: 'month', dateUnit: 'month', amount: 1 },
-  { name: 'year', dateUnit: 'year', amount: 1 },
-  { name: 'ten-year', dateUnit: 'year', amount: 10 },
+  { name: 'hour', dateUnit: 'hour', amount: 1, keyDate: 12 },
+  { name: 'day', dateUnit: 'day', amount: 1, keyDate: 5 },
+  { name: 'week', dateUnit: 'day', amount: 7, keyDate: 5 },
+  { name: 'month', dateUnit: 'month', amount: 1, keyDate: 5 },
+  { name: 'year', dateUnit: 'year', amount: 1, keyDate: 5 },
+  {
+    name: 'ten-year',
+    dateUnit: 'year',
+    amount: 10,
+    keyDate: 5,
+  },
 ];
 ```

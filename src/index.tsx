@@ -3,7 +3,7 @@ import { DateTime } from 'luxon';
 import TimeNode from './component/TimeNode';
 import ReactStyle from './interface/ReactStyle';
 import TimelineProps from './interface/Timeline';
-import { datePlus, getDispTime } from './services/util';
+import { datePlus, getDispTime, getFixDate } from './services/util';
 import TimeLevel from './interface/TimeLevel';
 import TimeNodeProps from './interface/TimeNode';
 import Icon from './icon';
@@ -55,12 +55,26 @@ const classes: ReactStyle = {
     left: '8px',
     bottom: '60px',
     cursor: 'pointer',
+    width: '40px',
+    height: '40px',
+    borderRadius: '20px',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#2C3C4E',
   },
   right: {
     position: 'absolute',
     right: '8px',
     bottom: '60px',
     cursor: 'pointer',
+    width: '40px',
+    height: '40px',
+    borderRadius: '20px',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#2C3C4E',
   },
   zoomIn: {
     position: 'absolute',
@@ -77,12 +91,17 @@ const classes: ReactStyle = {
 };
 
 const defaultTimeLevels: TimeLevel[] = [
-  { name: 'hour', dateUnit: 'hour', amount: 1 },
-  { name: 'day', dateUnit: 'day', amount: 1 },
-  { name: 'week', dateUnit: 'day', amount: 7 },
-  { name: 'month', dateUnit: 'month', amount: 1 },
-  { name: 'year', dateUnit: 'year', amount: 1 },
-  { name: 'ten-year', dateUnit: 'year', amount: 10 },
+  { name: 'hour', dateUnit: 'hour', amount: 1, keyDate: 12 },
+  { name: 'day', dateUnit: 'day', amount: 1, keyDate: 5 },
+  { name: 'week', dateUnit: 'day', amount: 7, keyDate: 5 },
+  { name: 'month', dateUnit: 'month', amount: 1, keyDate: 5 },
+  { name: 'year', dateUnit: 'year', amount: 1, keyDate: 5 },
+  {
+    name: 'ten-year',
+    dateUnit: 'year',
+    amount: 10,
+    keyDate: 5,
+  },
 ];
 
 export const Timeline: FC<TimelineProps> = ({
@@ -102,6 +121,7 @@ export const Timeline: FC<TimelineProps> = ({
   const [translateX, setTranslateX] = useState(0);
   const [transition, setTransition] = useState(true);
   const [clickX, setClickX] = useState<number | null>(null);
+  const [initTimeX, setInitTimeX] = useState<number | null>(null);
 
   useEffect(() => {
     if (containerRef && containerRef.current) {
@@ -120,22 +140,35 @@ export const Timeline: FC<TimelineProps> = ({
         currentTimeLevel.dateUnit,
         -(Math.floor((perPage * 3) / 2) - 1) * currentTimeLevel.amount
       );
-      // 如果timeLevel不是小时，最左侧开始时间设为零点
-      if (currentTimeLevel.dateUnit !== 'hour') {
-        headTime = DateTime.fromMillis(
-          new Date(headTime.toLocaleString()).getTime()
-        );
-      }
+      // 根据dateUnit时间取整
+      headTime = getFixDate(headTime, currentTimeLevel);
+
+      // // 如果timeLevel不是小时，最左侧开始时间设为零点
+      // if (currentTimeLevel.dateUnit !== 'hour') {
+      //   headTime = DateTime.fromMillis(
+      //     new Date(headTime.toLocaleString()).getTime()
+      //   );
+      // } else {
+      //   // 取整点
+      //   let headTimeMillis = headTime.toMillis();
+      //   headTimeMillis = headTimeMillis - (headTimeMillis % 3600000);
+      //   headTime = DateTime.fromMillis(headTimeMillis);
+      // }
       for (let index = 0; index < perPage * 3; index++) {
         const time = datePlus(
           headTime,
           currentTimeLevel.dateUnit,
           index * currentTimeLevel.amount
         );
-        const dispTime = getDispTime(time, currentTimeLevel.dateUnit);
+        const dispRes = getDispTime(
+          time,
+          currentTimeLevel.dateUnit,
+          currentTimeLevel.keyDate
+        );
         array.push({
           time,
-          displayTime: dispTime,
+          displayTime: dispRes?.dispTime || '',
+          isKeyDate: dispRes?.isKeyDate || false,
           x: index * ITEM_WIDTH,
         });
       }
@@ -174,6 +207,24 @@ export const Timeline: FC<TimelineProps> = ({
       }
     }
   }, [clickX, translateX, perPage, timeNodeArray]);
+
+  useEffect(() => {
+    if (timeNodeArray.length) {
+      const startNode = timeNodeArray[0];
+      const endNode = timeNodeArray[timeNodeArray.length - 1];
+      if (startNode.time && endNode.time) {
+        const endStartTimeDiff =
+          endNode.time.toMillis() - startNode.time.toMillis();
+        const initStartTimeDiff = initTime - startNode.time.toMillis();
+        if (initStartTimeDiff > 0 && initStartTimeDiff < endStartTimeDiff) {
+          const initX =
+            startNode.x +
+            (endNode.x - startNode.x) * (initStartTimeDiff / endStartTimeDiff);
+          setInitTimeX(initX);
+        }
+      }
+    }
+  }, [timeNodeArray]);
 
   // 点击左右移动按钮
   const handleClickMoveButton = (next: boolean, e: React.MouseEvent) => {
@@ -225,7 +276,31 @@ export const Timeline: FC<TimelineProps> = ({
     ) {
       return;
     }
+    setTranslateX(-perPage * ITEM_WIDTH);
     setCurrentTimeLevel(timeLevels[zoomIn ? index + 1 : index - 1]);
+    if (clickX) {
+      const ratio =
+        (clickX + Math.abs(translateX)) / (perPage * 3 * ITEM_WIDTH);
+      const startNode = timeNodeArray[0];
+      const endNode = timeNodeArray[timeNodeArray.length - 1];
+      if (startNode.time && endNode.time) {
+        const timeDiff =
+          datePlus(
+            endNode.time,
+            currentTimeLevel.dateUnit,
+            currentTimeLevel.amount
+          ).toMillis() - startNode.time.toMillis();
+        const clickTime =
+          datePlus(
+            startNode.time,
+            currentTimeLevel.dateUnit,
+            -currentTimeLevel.amount / 2
+          ).toMillis() +
+          timeDiff * ratio;
+        setStartTime(DateTime.fromMillis(clickTime));
+      }
+    }
+    setClickX(null);
   };
 
   const handleClick = (event: React.MouseEvent) => {
@@ -270,6 +345,21 @@ export const Timeline: FC<TimelineProps> = ({
                 />
               </g>
             </defs>
+            <defs>
+              <g
+                id="init-time"
+                viewBox={`0,0,${ITEM_WIDTH},10`}
+                preserveAspectRatio="xMinYMin meet"
+              >
+                <circle
+                  cx={ITEM_WIDTH / 2}
+                  cy="5"
+                  r="5"
+                  fill="#F75C2F"
+                  stroke="#F75C2F"
+                />
+              </g>
+            </defs>
             <path
               d={`M 0 28 H ${perPage * 3 * ITEM_WIDTH} 28`}
               stroke="#F5F5F5"
@@ -279,9 +369,11 @@ export const Timeline: FC<TimelineProps> = ({
               <TimeNode
                 key={item.x}
                 displayTime={item.displayTime}
+                isKeyDate={item.isKeyDate}
                 x={item.x}
               />
             ))}
+            {initTimeX ? <use href="#init-time" x={initTimeX} y={23} /> : null}
           </svg>
         </div>
       </div>
