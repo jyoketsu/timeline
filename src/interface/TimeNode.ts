@@ -6,4 +6,5 @@ export default interface TimeNodeProps {
   isKeyDate: boolean;
   x: number;
   fill?: string;
+  itemWidth?: number;
 }

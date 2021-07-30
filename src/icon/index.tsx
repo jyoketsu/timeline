@@ -5,6 +5,7 @@ import Left from './Left';
 import Right from './right';
 import ZoomIn from './ZoomIn';
 import ZoomOut from './ZoomOut';
+import Home from './Home';
 
 const Icon = (props: IconProps) => {
   switch (props.name) {
@@ -16,6 +17,8 @@ const Icon = (props: IconProps) => {
       return <ZoomIn {...props} />;
     case 'zoomOut':
       return <ZoomOut {...props} />;
+    case 'home':
+      return <Home {...props} />;
     default:
       return null;
   }

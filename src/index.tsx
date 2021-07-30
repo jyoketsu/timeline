@@ -3,10 +3,18 @@ import { DateTime } from 'luxon';
 import TimeNode from './component/TimeNode';
 import ReactStyle from './interface/ReactStyle';
 import TimelineProps from './interface/Timeline';
-import { datePlus, getDispTime, getFixDate } from './services/util';
+import {
+  datePlus,
+  getDispTime,
+  getFixDate,
+  getNodeColumn,
+  getNodeX,
+} from './services/util';
 import TimeLevel from './interface/TimeLevel';
 import TimeNodeProps from './interface/TimeNode';
 import Icon from './icon';
+import NodeGroupItem from './interface/NodeGroupItem';
+import TimeNodes from './component/TimeNodes';
 
 // Please do not use types off of a default export module or else Storybook Docs will suffer.
 // see: https://github.com/storybookjs/storybook/issues/9556
@@ -16,6 +24,8 @@ import Icon from './icon';
 
 const ITEM_WIDTH = 100;
 const ANIME_TIME = 500;
+
+let timeout: NodeJS.Timeout;
 
 const classes: ReactStyle = {
   root: {
@@ -88,6 +98,12 @@ const classes: ReactStyle = {
     right: '8px',
     cursor: 'pointer',
   },
+  home: {
+    position: 'absolute',
+    top: '101px',
+    right: '8px',
+    cursor: 'pointer',
+  },
 };
 
 const defaultTimeLevels: TimeLevel[] = [
@@ -107,9 +123,10 @@ const defaultTimeLevels: TimeLevel[] = [
 export const Timeline: FC<TimelineProps> = ({
   timeLevels = defaultTimeLevels,
   initTime = new Date().getTime(),
+  nodeList,
+  nodeHeight,
   handleDateChanged,
   handleSelectedDateChanged,
-  children,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentTimeLevel, setCurrentTimeLevel] = useState<TimeLevel>(
@@ -122,6 +139,13 @@ export const Timeline: FC<TimelineProps> = ({
   const [transition, setTransition] = useState(true);
   const [clickX, setClickX] = useState<number | null>(null);
   const [initTimeX, setInitTimeX] = useState<number | null>(null);
+  const [nodeGroups, setNodeGroups] = useState<NodeGroupItem[][]>([]);
+
+  useEffect(() => {
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, []);
 
   useEffect(() => {
     if (containerRef && containerRef.current) {
@@ -210,21 +234,39 @@ export const Timeline: FC<TimelineProps> = ({
 
   useEffect(() => {
     if (timeNodeArray.length) {
-      const startNode = timeNodeArray[0];
-      const endNode = timeNodeArray[timeNodeArray.length - 1];
-      if (startNode.time && endNode.time) {
-        const endStartTimeDiff =
-          endNode.time.toMillis() - startNode.time.toMillis();
-        const initStartTimeDiff = initTime - startNode.time.toMillis();
-        if (initStartTimeDiff > 0 && initStartTimeDiff < endStartTimeDiff) {
-          const initX =
-            startNode.x +
-            (endNode.x - startNode.x) * (initStartTimeDiff / endStartTimeDiff);
-          setInitTimeX(initX);
-        }
-      }
+      const initX = getNodeX(initTime, timeNodeArray);
+      setInitTimeX(initX);
     }
   }, [timeNodeArray]);
+
+  useEffect(() => {
+    if (perPage && timeNodeArray.length) {
+      const startDateNode = timeNodeArray[0];
+      const columnCount = perPage * 3;
+      let nodeGroups: NodeGroupItem[][] = new Array(columnCount);
+      for (let index = 0; index < nodeGroups.length; index++) {
+        nodeGroups[index] = [];
+      }
+      nodeList.sort((a, b) => a.time - b.time);
+      for (let index = 0; index < nodeList.length; index++) {
+        const node = nodeList[index];
+        // 两个相隔节点的时间差
+        const column = getNodeColumn(
+          node.time,
+          startDateNode,
+          currentTimeLevel
+        );
+        const x = getNodeX(node.time, timeNodeArray);
+        if (column !== -1 && nodeGroups[column]) {
+          nodeGroups[column].push({
+            x,
+            node,
+          });
+        }
+      }
+      setNodeGroups(nodeGroups);
+    }
+  }, [nodeList, perPage, timeNodeArray]);
 
   // 点击左右移动按钮
   const handleClickMoveButton = (next: boolean, e: React.MouseEvent) => {
@@ -265,8 +307,10 @@ export const Timeline: FC<TimelineProps> = ({
     }
   };
 
-  const handleChangeLevel = (zoomIn: boolean, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleChangeLevel = (zoomIn: boolean, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
     const index = timeLevels.findIndex(
       (item) => item.name === currentTimeLevel.name
     );
@@ -303,6 +347,11 @@ export const Timeline: FC<TimelineProps> = ({
     setClickX(null);
   };
 
+  const handleToHome = () => {
+    setStartTime(DateTime.fromMillis(initTime));
+    setTranslateX(-perPage * ITEM_WIDTH);
+  };
+
   const handleClick = (event: React.MouseEvent) => {
     event.stopPropagation();
     if (containerRef && containerRef.current) {
@@ -310,8 +359,24 @@ export const Timeline: FC<TimelineProps> = ({
     }
   };
 
+  const handleWheel = (e: React.WheelEvent) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      if (e.deltaY < 0) {
+        handleChangeLevel(false);
+      } else {
+        handleChangeLevel(true);
+      }
+    }, 200);
+  };
+
   return (
-    <div style={classes.root} ref={containerRef} onClick={handleClick}>
+    <div
+      style={classes.root}
+      ref={containerRef}
+      onClick={handleClick}
+      onWheel={handleWheel}
+    >
       <div
         style={{
           ...classes.wrapper,
@@ -323,7 +388,13 @@ export const Timeline: FC<TimelineProps> = ({
           },
         }}
       >
-        <div style={classes.contentWrapper}>{children}</div>
+        <div style={classes.contentWrapper}>
+          <TimeNodes
+            nodeGroups={nodeGroups}
+            itemWidth={ITEM_WIDTH}
+            itemHeight={nodeHeight}
+          />
+        </div>
         <div style={classes.timelineWrapper}>
           <svg
             viewBox={`0 0 ${perPage * 3 * ITEM_WIDTH} 56`}
@@ -370,6 +441,7 @@ export const Timeline: FC<TimelineProps> = ({
                 key={item.x}
                 displayTime={item.displayTime}
                 isKeyDate={item.isKeyDate}
+                itemWidth={ITEM_WIDTH}
                 x={item.x}
               />
             ))}
@@ -402,6 +474,9 @@ export const Timeline: FC<TimelineProps> = ({
       </div>
       <div style={classes.zoomOut} onClick={(e) => handleChangeLevel(false, e)}>
         <Icon name="zoomOut" width={30} height={30} />
+      </div>
+      <div style={classes.home} onClick={handleToHome}>
+        <Icon name="home" width={30} height={30} />
       </div>
     </div>
   );

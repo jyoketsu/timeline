@@ -1,7 +1,7 @@
 import ReactStyle from './ReactStyle';
 
 export default interface IconProps {
-  name: 'left' | 'right' | 'zoomIn' | 'zoomOut';
+  name: 'left' | 'right' | 'zoomIn' | 'zoomOut' | 'home';
   style?: ReactStyle;
   fill?: string;
   width?: string | number;

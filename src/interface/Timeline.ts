@@ -1,4 +1,5 @@
-import { HTMLAttributes, ReactChild } from 'react';
+import { HTMLAttributes } from 'react';
+import NodeItem from './NodeItem';
 import TimeLevel from './TimeLevel';
 
 export default interface TimelineProps extends HTMLAttributes<HTMLDivElement> {
@@ -8,7 +9,9 @@ export default interface TimelineProps extends HTMLAttributes<HTMLDivElement> {
   initTimeLevel?: TimeLevel;
   // 时间轴默认开始时间
   initTime?: number;
-  children?: ReactChild;
+  // 节点列表
+  nodeList: NodeItem[];
+  nodeHeight: number;
   handleDateChanged?: DateChangedFunc;
   handleSelectedDateChanged?: SelectedDateChangedFunc;
 }
