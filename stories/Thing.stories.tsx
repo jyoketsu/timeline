@@ -23,47 +23,35 @@ export const Default = Template.bind({});
 const nowTime = new Date().getTime();
 let timeList = [
   {
+    _key: nowTime.toString(),
     time: nowTime,
     itemRender: function () {
-      return (
-        <div style={{ color: '#FFF', height: '40px', border: '1px solid' }}>
-          测试
-        </div>
-      );
+      return <div style={{ height: '40px', border: '1px solid' }}>测试</div>;
     },
   },
 ];
 for (let index = 1; index < 11; index++) {
   timeList.push({
+    _key: (nowTime + index * 3600000).toString(),
     time: nowTime + index * 3600000,
     itemRender: function () {
-      return (
-        <div style={{ color: '#FFF', height: '40px', border: '1px solid' }}>
-          测试
-        </div>
-      );
+      return <div style={{ height: '40px', border: '1px solid' }}>测试</div>;
     },
   });
   if (index % 3 === 0) {
     timeList.push({
+      _key: (nowTime + index * 3600000 + 36000).toString(),
       time: nowTime + index * 3600000 + 36000,
       itemRender: function () {
-        return (
-          <div style={{ color: '#FFF', height: '40px', border: '1px solid' }}>
-            测试
-          </div>
-        );
+        return <div style={{ height: '40px', border: '1px solid' }}>测试</div>;
       },
     });
   }
   timeList.push({
+    _key: (nowTime - index * 3600000).toString(),
     time: nowTime - index * 3600000,
     itemRender: function () {
-      return (
-        <div style={{ color: '#FFF', height: '40px', border: '1px solid' }}>
-          测试
-        </div>
-      );
+      return <div style={{ height: '40px', border: '1px solid' }}>测试</div>;
     },
   });
 }

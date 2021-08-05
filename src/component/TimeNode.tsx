@@ -9,13 +9,13 @@ export default function TimeNode({
 }: TimeNodeProps) {
   return (
     <g>
-      <use href="#time-item" x={x} y={23} />
+      <use href={isKeyDate ? '#key-time-item' : '#time-item'} x={x} y={5} />
       <text
         x={x + (itemWidth || 100) / 2}
-        y={46}
-        fontSize={isKeyDate ? 14 : 10}
+        y={isKeyDate ? 40 : 26}
+        fontSize={isKeyDate ? 12 : 10}
         fontWeight="800"
-        fill="#F5F5F5"
+        fill={isKeyDate ? '#808080' : '#C0C0C0'}
         style={{ userSelect: 'none' }}
         textAnchor="middle"
       >

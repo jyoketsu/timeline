@@ -2,16 +2,24 @@ import React from 'react';
 import NodeGroupItem from '../interface/NodeGroupItem';
 import TimeNodeColumn from './TimeNodeColumn';
 
+interface ClickFunc {
+  (nodeKey: string, time: number): void;
+}
+
 interface Props {
   nodeGroups: NodeGroupItem[][];
   itemWidth: number;
   itemHeight: number;
+  selectedKey?: string;
+  handleClickNode: ClickFunc;
 }
 
 export default function TimeNodes({
   nodeGroups,
   itemWidth,
   itemHeight,
+  selectedKey,
+  handleClickNode,
 }: Props) {
   return (
     <div>
@@ -21,6 +29,8 @@ export default function TimeNodes({
           nodes={nodes}
           itemWidth={itemWidth}
           itemHeight={itemHeight}
+          selectedKey={selectedKey}
+          handleClickNode={handleClickNode}
         />
       ))}
     </div>

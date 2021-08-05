@@ -4,4 +4,6 @@ export default interface TimeLevel {
   amount: number;
   // 能被keyDate个dateUnit整除，则为keyDate
   keyDate: number;
+  // 能被keyDate个dateUnit的keyDatePlace位数整除，则为keyDate
+  keyDatePlace?: number;
 }

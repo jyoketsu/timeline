@@ -51,17 +51,25 @@ function getUnit(date: DateTime, dateUnit: 'year' | 'month' | 'day' | 'hour') {
   }
 }
 
-function getDispTime(
-  date: DateTime,
-  dateUnit: 'year' | 'month' | 'day' | 'hour',
-  keyDate: number
-) {
-  const unit = getUnit(date, dateUnit);
+function getDispTime(date: DateTime, timeLevel: TimeLevel) {
+  const unit = getUnit(date, timeLevel.dateUnit);
   if (unit === null) {
     return null;
   }
-  const isKeyDate = unit % keyDate === 0 ? true : false;
-  switch (dateUnit) {
+  let isKeyDate;
+  if (timeLevel.keyDatePlace) {
+    const res = ~~(
+      (unit % (timeLevel.keyDatePlace * 10)) /
+      timeLevel.keyDatePlace
+    );
+    console.log('---res---', unit, res);
+
+    isKeyDate = res % timeLevel.keyDate === 0 ? true : false;
+  } else {
+    isKeyDate = unit % timeLevel.keyDate === 0 ? true : false;
+  }
+
+  switch (timeLevel.dateUnit) {
     case 'year':
       return {
         dispTime: date.toFormat('yyyy'),

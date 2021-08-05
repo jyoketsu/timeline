@@ -2,7 +2,7 @@
   "name": "@jyoketsu/timeline-react",
   "author": "xujie <jyoketsu@gmail.com>",
   "description": "Timeline Component for React / React时间轴组件",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "license": "MIT",
   "repository": {
     "type": "git",

@@ -3,7 +3,7 @@ import IconProps from '../interface/IconProps';
 
 const SVG = ({
   style = {},
-  fill = '#F5F5F5',
+  fill = '#C0C0C0',
   width = 200,
   height = 200,
   className = '',
