@@ -20,45 +20,67 @@ const Template: Story<TimelineProps> = (args) => <Timeline {...args} />;
 // https://storybook.js.org/docs/react/workflows/unit-testing
 export const Default = Template.bind({});
 
+interface Props {
+  text: string;
+}
+function Item({ text }: Props) {
+  return (
+    <div
+      style={{
+        height: '20px',
+        lineHeight: '20px',
+        padding: '0 8px',
+        border: '1px solid #797979',
+        borderRadius: '4px 4px 4px 0',
+        backgroundColor: '#DCDCDC',
+        transition: 'all 0.5s',
+        cursor: 'pointer',
+      }}
+    >
+      {text}
+    </div>
+  );
+}
+
 const nowTime = new Date().getTime();
 let timeList = [
   {
     _key: nowTime.toString(),
     time: nowTime,
     itemRender: function () {
-      return <div style={{ height: '40px', border: '1px solid' }}>测试</div>;
+      return <Item text="测试测试测试测试测试测试测试测试测" />;
     },
   },
 ];
-for (let index = 1; index < 11; index++) {
+for (let index = 1; index < 110; index++) {
   timeList.push({
     _key: (nowTime + index * 3600000).toString(),
-    time: nowTime + index * 3600000,
+    time: nowTime + index * 3600000 * 1.2 + 36000,
     itemRender: function () {
-      return <div style={{ height: '40px', border: '1px solid' }}>测试</div>;
+      return <Item text="测试" />;
     },
   });
   if (index % 3 === 0) {
     timeList.push({
       _key: (nowTime + index * 3600000 + 36000).toString(),
-      time: nowTime + index * 3600000 + 36000,
+      time: nowTime + index * 3600000 * 1.4,
       itemRender: function () {
-        return <div style={{ height: '40px', border: '1px solid' }}>测试</div>;
+        return <Item text="测试" />;
       },
     });
   }
   timeList.push({
     _key: (nowTime - index * 3600000).toString(),
-    time: nowTime - index * 3600000,
+    time: nowTime - index * 3600000 * 2.1,
     itemRender: function () {
-      return <div style={{ height: '40px', border: '1px solid' }}>测试</div>;
+      return <Item text="测试" />;
     },
   });
 }
 
 Default.args = {
   nodeList: timeList,
-  nodeHeight: 40,
+  nodeHeight: 20,
   handleSelectedDateChanged: (clickTime: number) => {
     console.log(
       '---handleSelectedDateChanged---',

@@ -14,7 +14,7 @@
 
 ## Screenshot
 
-[![WsSGNR.png](https://z3.ax1x.com/2021/07/23/WsSGNR.png)](https://imgtu.com/i/WsSGNR)
+[![fnkSqf.png](https://z3.ax1x.com/2021/08/06/fnkSqf.png)](https://imgtu.com/i/fnkSqf)
 
 ## [live demo](https://jyoketsu.github.io/timeline/)
 
@@ -42,7 +42,7 @@ import TimeLevel from '@jyoketsu/timeline-react/dist/interface/TimeLevel';
   </Timeline>
 </div>;
 ```
-
+### Hold down the right button and drag
 ## Props
 
 | 属性                      | 说明                 | 类型                      | 是否必须 | 默认值                 |
@@ -71,6 +71,7 @@ interface TimeLevel {
 
 ```js
 export default interface NodeItem {
+  _key: string;
   time: number;
   itemRender: Function;
 }

@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useRef, useState } from 'react';
+import React, { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { DateTime } from 'luxon';
 import TimeNode from './component/TimeNode';
 import ReactStyle from './interface/ReactStyle';
@@ -24,7 +24,7 @@ import usePrevious from './hook/usePrevious';
  */
 
 const ITEM_WIDTH = 100;
-const TIMELINE_HEIGHT = 49;
+const TIMELINE_HEIGHT = 44;
 const ANIME_TIME = 500;
 
 let timeout: NodeJS.Timeout;
@@ -134,7 +134,7 @@ export const Timeline: FC<TimelineProps> = ({
   nodeList,
   nodeHeight,
   handleDateChanged,
-  handleSelectedDateChanged,
+  // handleSelectedDateChanged,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentTimeLevel, setCurrentTimeLevel] = useState<TimeLevel>(
@@ -149,6 +149,7 @@ export const Timeline: FC<TimelineProps> = ({
   const [initTimeX, setInitTimeX] = useState<number | null>(null);
   const [nodeGroups, setNodeGroups] = useState<NodeGroupItem[][]>([]);
   const [started, setStarted] = useState(false);
+  const [draggable, setDraggable] = useState(true);
   const [selectedNodeKey, setSelectedNodeKey] = useState<string | undefined>(
     undefined
   );
@@ -247,14 +248,15 @@ export const Timeline: FC<TimelineProps> = ({
       nodeList.sort((a, b) => a.time - b.time);
       for (let index = 0; index < nodeList.length; index++) {
         const node = nodeList[index];
-        // 两个相隔节点的时间差
+        // 获取节点所在列
         const column = getNodeColumn(
           node.time,
           startDateNode,
           currentTimeLevel
         );
+
         const x = getNodeX(node.time, timeNodeArray);
-        if (column !== -1 && nodeGroups[column]) {
+        if (column >= 0 && column <= perPage * 3 - 1 && nodeGroups[column]) {
           nodeGroups[column].push({
             x,
             node,
@@ -263,46 +265,49 @@ export const Timeline: FC<TimelineProps> = ({
       }
       setNodeGroups(nodeGroups);
     }
+    return () => {
+      setNodeGroups([]);
+    };
   }, [nodeList, perPage, timeNodeArray]);
 
   // 点击左右移动按钮
-  const handleClickMoveButton = (next: boolean, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (
-      !transition ||
-      translateX === 0 ||
-      translateX === -perPage * 2 * ITEM_WIDTH
-    ) {
-      return;
-    }
-    // 移动一个元素的宽度
-    setTranslateX((prevX) => (next ? prevX + ITEM_WIDTH : prevX - ITEM_WIDTH));
+  // const handleClickMoveButton = (next: boolean, e: React.MouseEvent) => {
+  //   e.stopPropagation();
+  //   if (
+  //     !transition ||
+  //     translateX === 0 ||
+  //     translateX === -perPage * 2 * ITEM_WIDTH
+  //   ) {
+  //     return;
+  //   }
+  //   // 移动一个元素的宽度
+  //   setTranslateX((prevX) => (next ? prevX + ITEM_WIDTH : prevX - ITEM_WIDTH));
 
-    // 如果移到头了
-    if (
-      // 往右边到头
-      (next && translateX + ITEM_WIDTH === 0) ||
-      // 往左边到头
-      (!next && translateX - ITEM_WIDTH === -perPage * 2 * ITEM_WIDTH)
-    ) {
-      setTimeout(() => {
-        setTransition(false);
-        setStartTime((prevStartTime) =>
-          datePlus(
-            prevStartTime,
-            currentTimeLevel.dateUnit,
-            next
-              ? -currentTimeLevel.amount * perPage
-              : currentTimeLevel.amount * perPage
-          )
-        );
-        setTranslateX(-perPage * ITEM_WIDTH);
-        setTimeout(() => {
-          setTransition(true);
-        }, ANIME_TIME);
-      }, ANIME_TIME);
-    }
-  };
+  //   // 如果移到头了
+  //   if (
+  //     // 往右边到头
+  //     (next && translateX + ITEM_WIDTH === 0) ||
+  //     // 往左边到头
+  //     (!next && translateX - ITEM_WIDTH === -perPage * 2 * ITEM_WIDTH)
+  //   ) {
+  //     setTimeout(() => {
+  //       setTransition(false);
+  //       setStartTime((prevStartTime) =>
+  //         datePlus(
+  //           prevStartTime,
+  //           currentTimeLevel.dateUnit,
+  //           next
+  //             ? -currentTimeLevel.amount * perPage
+  //             : currentTimeLevel.amount * perPage
+  //         )
+  //       );
+  //       setTranslateX(-perPage * ITEM_WIDTH);
+  //       setTimeout(() => {
+  //         setTransition(true);
+  //       }, ANIME_TIME);
+  //     }, ANIME_TIME);
+  //   }
+  // };
 
   const handleChangeLevel = (zoomIn: boolean, e?: React.MouseEvent) => {
     if (e) {
@@ -356,14 +361,15 @@ export const Timeline: FC<TimelineProps> = ({
     }, ANIME_TIME);
   };
 
-  const handleClick = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    if (containerRef && containerRef.current) {
-      // setClickX(event.nativeEvent.offsetX + translateX);
-    }
-  };
+  // const handleClick = (event: React.MouseEvent) => {
+  //   event.stopPropagation();
+  //   if (containerRef && containerRef.current) {
+  //     // setClickX(event.nativeEvent.offsetX + translateX);
+  //   }
+  // };
 
   const handleWheel = (e: React.WheelEvent) => {
+    e.stopPropagation();
     e.preventDefault();
     clearTimeout(timeout);
     timeout = setTimeout(() => {
@@ -376,11 +382,29 @@ export const Timeline: FC<TimelineProps> = ({
   };
 
   const handleMoveStart = (e: React.MouseEvent<HTMLElement>) => {
+    if (!draggable) {
+      return;
+    }
     if (e.button === 2) {
       e.preventDefault();
       clickX = e.clientX;
       setTransition(false);
       setStarted(true);
+      setDraggable(false);
+    }
+  };
+
+  const handleMove = (e: React.MouseEvent<HTMLElement>) => {
+    e.preventDefault();
+    if (started) {
+      let movedX = 0;
+      movedX = e.clientX - clickX;
+      if (Math.abs(movedX) < 18) {
+        return;
+      }
+
+      setTranslateX(translateX + movedX);
+      clickX = e.clientX;
     }
   };
 
@@ -413,23 +437,159 @@ export const Timeline: FC<TimelineProps> = ({
           )
         );
         setTranslateX(-perPage * ITEM_WIDTH);
+        setDraggable(true);
       }, ANIME_TIME);
     }
   };
 
-  const handleMove = (e: React.MouseEvent<HTMLElement>) => {
-    e.preventDefault();
-    if (started) {
-      let movedX = 0;
-      movedX = e.clientX - clickX;
-      setTranslateX(translateX + movedX);
-      clickX = e.clientX;
-    }
+  const handleClickNode = (node: NodeGroupItem) => {
+    setSelectedNodeKey(node.node._key);
+    const column = getNodeColumn(
+      node.node.time,
+      timeNodeArray[0],
+      currentTimeLevel
+    );
+
+    const selectedX = timeNodeArray[0].x + (column + 1) * ITEM_WIDTH;
+    const middleX = Math.floor((perPage * 3) / 2) * ITEM_WIDTH;
+    const diffX = selectedX - middleX;
+
+    let movedX = 0;
+    setTransition(true);
+    setTranslateX((prevX) => {
+      movedX = prevX - diffX;
+      return movedX;
+    });
+
+    setTimeout(() => {
+      setTransition(false);
+      const movedCount = Math.abs(
+        (-perPage * ITEM_WIDTH - movedX) / ITEM_WIDTH
+      );
+      setStartTime((prevStartTime) =>
+        datePlus(
+          prevStartTime,
+          currentTimeLevel.dateUnit,
+          diffX < 0
+            ? -currentTimeLevel.amount * movedCount
+            : currentTimeLevel.amount * movedCount
+        )
+      );
+      setTranslateX(-perPage * ITEM_WIDTH);
+    }, ANIME_TIME);
   };
+
+  const timeline = useMemo(
+    () => (
+      <div style={classes.timelineWrapper}>
+        <svg
+          viewBox={`0 0 ${perPage * 3 * ITEM_WIDTH} ${TIMELINE_HEIGHT}`}
+          width={perPage * 3 * ITEM_WIDTH}
+          height={TIMELINE_HEIGHT}
+        >
+          <defs>
+            <g
+              id="time-item"
+              viewBox={`0,0,${ITEM_WIDTH},12`}
+              preserveAspectRatio="xMinYMin meet"
+            >
+              <path d={`M 0 0 v 12`} stroke="#ededed" />
+              <path d={`M ${ITEM_WIDTH / 4} 0 v 12`} stroke="#ededed" />
+              <path d={`M ${ITEM_WIDTH / 2} 0 v 12`} stroke="#C0C0C0" />
+              <path d={`M ${ITEM_WIDTH * 0.75} 0 v 12`} stroke="#ededed" />
+            </g>
+            <g
+              id="key-time-item"
+              viewBox={`0,0,${ITEM_WIDTH},24`}
+              preserveAspectRatio="xMinYMin meet"
+            >
+              <path d={`M 0 0 v 12`} stroke="#ededed" />
+              <path d={`M ${ITEM_WIDTH / 4} 0 v 12`} stroke="#ededed" />
+              <path d={`M ${ITEM_WIDTH / 2} 0 v 24`} stroke="#808080" />
+              <path d={`M ${ITEM_WIDTH * 0.75} 0 v 12`} stroke="#ededed" />
+            </g>
+            <g
+              id="init-time"
+              viewBox={`0,0,${ITEM_WIDTH},10`}
+              preserveAspectRatio="xMinYMin meet"
+            >
+              <circle cx={ITEM_WIDTH / 2} cy="5" r="5" fill="#F75C2F" />
+            </g>
+            <g id="dot" viewBox={`0,0,5,5`} preserveAspectRatio="xMinYMin meet">
+              <circle cx="2.5" cy="2.5" r="2.5" fill="#919191" />
+            </g>
+          </defs>
+
+          {/* 背景，填充白色 */}
+          <rect
+            x={0}
+            y={0}
+            width={perPage * 3 * ITEM_WIDTH}
+            height={TIMELINE_HEIGHT}
+            fill="#FFF"
+          />
+          {/* 时间轴上方横线 */}
+          <path
+            d={`M 0 0 H ${perPage * 3 * ITEM_WIDTH}`}
+            stroke="#e5e5e5"
+            strokeWidth="1"
+          />
+          {/* 时间轴下方横线 */}
+          <path
+            d={`M 0 ${TIMELINE_HEIGHT} H ${perPage * 3 * ITEM_WIDTH}`}
+            stroke="#e5e5e5"
+            strokeWidth="1"
+          />
+          {/* 时间坐标 */}
+          {timeNodeArray.map((item) => (
+            <TimeNode
+              key={item.x}
+              displayTime={item.displayTime}
+              isKeyDate={item.isKeyDate}
+              itemWidth={ITEM_WIDTH}
+              x={item.x}
+            />
+          ))}
+          {/* 子节点时间（灰点） */}
+          {nodeGroups.map((group) =>
+            group.map((node) => (
+              <use
+                key={node.node._key}
+                href="#dot"
+                x={node.x + ITEM_WIDTH / 2 - 2.5}
+                y={0}
+              />
+            ))
+          )}
+          {/* 初始化时间（红点） */}
+          {initTimeX ? <use href="#init-time" x={initTimeX} y={0} /> : null}
+        </svg>
+      </div>
+    ),
+    [timeNodeArray, nodeGroups]
+  );
+
+  const contentNodes = useMemo(
+    () => (
+      <div style={classes.contentWrapper}>
+        <TimeNodes
+          nodeGroups={nodeGroups}
+          itemWidth={ITEM_WIDTH}
+          itemHeight={nodeHeight}
+          selectedKey={selectedNodeKey}
+          handleClickNode={handleClickNode}
+        />
+      </div>
+    ),
+    [nodeGroups]
+  );
 
   return (
     <div
-      style={classes.root}
+      style={{
+        ...classes.root,
+        cursor: started ? 'grabbing' : draggable ? 'grab' : 'not-allowed',
+      }}
       ref={containerRef}
       onWheel={handleWheel}
       onContextMenu={(e) => e.preventDefault()}
@@ -450,95 +610,19 @@ export const Timeline: FC<TimelineProps> = ({
           },
         }}
       >
-        <div style={classes.contentWrapper}>
-          <TimeNodes
-            nodeGroups={nodeGroups}
-            itemWidth={ITEM_WIDTH}
-            itemHeight={nodeHeight}
-            selectedKey={selectedNodeKey}
-            handleClickNode={setSelectedNodeKey}
-          />
-        </div>
-        <div style={classes.timelineWrapper}>
-          <svg
-            viewBox={`0 0 ${perPage * 3 * ITEM_WIDTH} ${TIMELINE_HEIGHT}`}
-            width={perPage * 3 * ITEM_WIDTH}
-            height={TIMELINE_HEIGHT}
-          >
-            <defs>
-              <g
-                id="time-item"
-                viewBox={`0,0,${ITEM_WIDTH},12`}
-                preserveAspectRatio="xMinYMin meet"
-              >
-                <path d={`M 0 0 v 12`} stroke="#ededed" />
-                <path d={`M ${ITEM_WIDTH / 4} 0 v 12`} stroke="#ededed" />
-                <path d={`M ${ITEM_WIDTH / 2} 0 v 12`} stroke="#C0C0C0" />
-                <path d={`M ${ITEM_WIDTH * 0.75} 0 v 12`} stroke="#ededed" />
-              </g>
-              <g
-                id="key-time-item"
-                viewBox={`0,0,${ITEM_WIDTH},24`}
-                preserveAspectRatio="xMinYMin meet"
-              >
-                <path d={`M 0 0 v 12`} stroke="#ededed" />
-                <path d={`M ${ITEM_WIDTH / 4} 0 v 12`} stroke="#ededed" />
-                <path d={`M ${ITEM_WIDTH / 2} 0 v 24`} stroke="#808080" />
-                <path d={`M ${ITEM_WIDTH * 0.75} 0 v 12`} stroke="#ededed" />
-              </g>
-              <g
-                id="init-time"
-                viewBox={`0,0,${ITEM_WIDTH},10`}
-                preserveAspectRatio="xMinYMin meet"
-              >
-                <circle
-                  cx={ITEM_WIDTH / 2}
-                  cy="5"
-                  r="5"
-                  fill="#F75C2F"
-                  stroke="#F75C2F"
-                />
-              </g>
-            </defs>
-
-            <rect
-              x={0}
-              y={5}
-              width={perPage * 3 * ITEM_WIDTH}
-              height={TIMELINE_HEIGHT - 5}
-              fill="#FFF"
-            />
-            <path
-              d={`M 0 5 H ${perPage * 3 * ITEM_WIDTH}`}
-              stroke="#e5e5e5"
-              strokeWidth="1"
-            />
-            <path
-              d={`M 0 ${TIMELINE_HEIGHT} H ${perPage * 3 * ITEM_WIDTH}`}
-              stroke="#e5e5e5"
-              strokeWidth="1"
-            />
-            {timeNodeArray.map((item) => (
-              <TimeNode
-                key={item.x}
-                displayTime={item.displayTime}
-                isKeyDate={item.isKeyDate}
-                itemWidth={ITEM_WIDTH}
-                x={item.x}
-              />
-            ))}
-            {initTimeX ? <use href="#init-time" x={initTimeX} y={0} /> : null}
-          </svg>
-        </div>
+        {contentNodes}
+        {timeline}
       </div>
-
       <div style={classes.actionButtonWrapper}>
-        <div style={classes.zoomIn} onClick={(e) => handleChangeLevel(true, e)}>
+        <div
+          style={classes.zoomIn}
+          onClick={(e) => handleChangeLevel(false, e)}
+        >
           <Icon name="zoomIn" width={22} height={22} />
         </div>
         <div
           style={classes.zoomOut}
-          onClick={(e) => handleChangeLevel(false, e)}
+          onClick={(e) => handleChangeLevel(true, e)}
         >
           <Icon name="zoomOut" width={22} height={22} />
         </div>

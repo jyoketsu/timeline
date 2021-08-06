@@ -9,7 +9,7 @@ export default function TimeNode({
 }: TimeNodeProps) {
   return (
     <g>
-      <use href={isKeyDate ? '#key-time-item' : '#time-item'} x={x} y={5} />
+      <use href={isKeyDate ? '#key-time-item' : '#time-item'} x={x} y={0} />
       <text
         x={x + (itemWidth || 100) / 2}
         y={isKeyDate ? 40 : 26}

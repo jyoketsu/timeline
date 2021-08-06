@@ -62,7 +62,6 @@ function getDispTime(date: DateTime, timeLevel: TimeLevel) {
       (unit % (timeLevel.keyDatePlace * 10)) /
       timeLevel.keyDatePlace
     );
-    console.log('---res---', unit, res);
 
     isKeyDate = res % timeLevel.keyDate === 0 ? true : false;
   } else {

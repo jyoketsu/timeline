@@ -3,7 +3,7 @@ import NodeGroupItem from '../interface/NodeGroupItem';
 import TimeNodeColumn from './TimeNodeColumn';
 
 interface ClickFunc {
-  (nodeKey: string, time: number): void;
+  (node: NodeGroupItem): void;
 }
 
 interface Props {
