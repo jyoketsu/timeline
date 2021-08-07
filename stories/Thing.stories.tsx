@@ -81,12 +81,6 @@ for (let index = 1; index < 110; index++) {
 Default.args = {
   nodeList: timeList,
   nodeHeight: 20,
-  handleSelectedDateChanged: (clickTime: number) => {
-    console.log(
-      '---handleSelectedDateChanged---',
-      DateTime.fromMillis(clickTime).toFormat('yyyy-LL-dd TT')
-    );
-  },
   handleDateChanged: (startDate: number, endDate: number, amount: number) => {
     console.log(
       '---handleDateChanged---',
@@ -94,5 +88,8 @@ Default.args = {
       DateTime.fromMillis(endDate).toFormat('yyyy-LL-dd TT'),
       amount
     );
+  },
+  handleClickAdd: (time: number, x: number, y: number) => {
+    console.log('---handleClickAdd---', time, x, y);
   },
 };

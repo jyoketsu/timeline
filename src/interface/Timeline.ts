@@ -2,6 +2,10 @@ import { HTMLAttributes } from 'react';
 import NodeItem from './NodeItem';
 import TimeLevel from './TimeLevel';
 
+interface ClickAddFunc {
+  (time: number, clientX: number, clientY: number): void;
+}
+
 export default interface TimelineProps extends HTMLAttributes<HTMLDivElement> {
   // 时间等级：
   timeLevels?: TimeLevel[];
@@ -9,11 +13,12 @@ export default interface TimelineProps extends HTMLAttributes<HTMLDivElement> {
   initTimeLevel?: TimeLevel;
   // 时间轴默认开始时间
   initTime?: number;
+  backgroundColor?: string;
   // 节点列表
   nodeList: NodeItem[];
   nodeHeight: number;
   handleDateChanged?: DateChangedFunc;
-  handleSelectedDateChanged?: SelectedDateChangedFunc;
+  handleClickAdd?: ClickAddFunc;
 }
 
 interface DateChangedFunc {
@@ -23,8 +28,4 @@ interface DateChangedFunc {
     amount: number,
     currentTimeLevel: TimeLevel
   ): void;
-}
-
-interface SelectedDateChangedFunc {
-  (selectedDate: number): void;
 }

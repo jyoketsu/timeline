@@ -9,6 +9,7 @@ import {
   getFixDate,
   getNodeColumn,
   getNodeX,
+  getTimeByX,
 } from './services/util';
 import TimeLevel from './interface/TimeLevel';
 import TimeNodeProps from './interface/TimeNode';
@@ -36,7 +37,6 @@ const classes: ReactStyle = {
     width: '100%',
     height: '100%',
     overflow: 'hidden',
-    backgroundColor: '#F2F2F2',
     userSelect: 'none',
   },
   wrapper: {
@@ -131,10 +131,11 @@ const defaultTimeLevels: TimeLevel[] = [
 export const Timeline: FC<TimelineProps> = ({
   timeLevels = defaultTimeLevels,
   initTime = new Date().getTime(),
+  backgroundColor = '#F2F2F2',
   nodeList,
   nodeHeight,
   handleDateChanged,
-  // handleSelectedDateChanged,
+  handleClickAdd,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentTimeLevel, setCurrentTimeLevel] = useState<TimeLevel>(
@@ -153,6 +154,8 @@ export const Timeline: FC<TimelineProps> = ({
   const [selectedNodeKey, setSelectedNodeKey] = useState<string | undefined>(
     undefined
   );
+  const [hoverX, setHoverX] = useState(0);
+  const [hoverY, setHoverY] = useState(0);
 
   useEffect(() => {
     return () => {
@@ -405,6 +408,14 @@ export const Timeline: FC<TimelineProps> = ({
 
       setTranslateX(translateX + movedX);
       clickX = e.clientX;
+    } else if (draggable && containerRef && containerRef.current) {
+      let movedX = 0;
+      movedX = e.clientX - clickX;
+      if (Math.abs(movedX) < 8) {
+        return;
+      }
+      setHoverX(e.clientX - containerRef.current.offsetLeft);
+      setHoverY(e.clientY - containerRef.current.offsetTop);
     }
   };
 
@@ -438,7 +449,11 @@ export const Timeline: FC<TimelineProps> = ({
         );
         setTranslateX(-perPage * ITEM_WIDTH);
         setDraggable(true);
+        setHoverX(0);
+        setHoverY(0);
       }, ANIME_TIME);
+    } else if (e.button === 0) {
+      clickAdd(e);
     }
   };
 
@@ -584,10 +599,26 @@ export const Timeline: FC<TimelineProps> = ({
     [nodeGroups]
   );
 
+  const clickAdd = (event: React.MouseEvent<HTMLElement>) => {
+    if (handleClickAdd) {
+      handleClickAdd(
+        getTimeByX(
+          hoverX - translateX,
+          ITEM_WIDTH,
+          timeNodeArray,
+          currentTimeLevel
+        ),
+        event.clientX,
+        event.clientY
+      );
+    }
+  };
+
   return (
     <div
       style={{
         ...classes.root,
+        backgroundColor: backgroundColor,
         cursor: started ? 'grabbing' : draggable ? 'grab' : 'not-allowed',
       }}
       ref={containerRef}
@@ -599,6 +630,48 @@ export const Timeline: FC<TimelineProps> = ({
       onMouseMove={handleMove}
       // onClick={handleClick}
     >
+      {hoverX && !started && draggable && handleClickAdd ? (
+        <div
+          style={{
+            ...classes.verticalLine,
+            ...{
+              left: `${hoverX}px`,
+            },
+          }}
+        ></div>
+      ) : null}
+      {hoverX && hoverY && !started && draggable && handleClickAdd ? (
+        <div
+          style={{
+            position: 'absolute',
+            left: `${hoverX - 11}px`,
+            top: `${hoverY - 33}px`,
+          }}
+        >
+          <Icon name="plus" width={22} height={22} fill="#FF4500" />
+        </div>
+      ) : null}
+      {hoverX && !started && draggable && handleClickAdd ? (
+        <span
+          style={{
+            position: 'absolute',
+            left: `${hoverX - 50}px`,
+            top: '8px',
+            color: '#FF4500',
+            fontSize: '10px',
+            fontWeight: 800,
+          }}
+        >
+          {DateTime.fromMillis(
+            getTimeByX(
+              hoverX - translateX,
+              ITEM_WIDTH,
+              timeNodeArray,
+              currentTimeLevel
+            )
+          ).toFormat('yyyy-LL-dd T')}
+        </span>
+      ) : null}
       <div
         style={{
           ...classes.wrapper,

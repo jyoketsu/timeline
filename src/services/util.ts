@@ -148,4 +148,31 @@ function getNodeColumn(
   }
 }
 
-export { datePlus, getDispTime, getFixDate, getNodeX, getNodeColumn };
+function getTimeByX(
+  x: number,
+  itemWidth: number,
+  timeNodeArray: TimeNodeProps[],
+  timeLevel: TimeLevel
+) {
+  // 两个相隔节点的时间差
+  const twoNodeDiffTime = getTwoNodeDiffTime(timeLevel);
+  const diffCount: number = Math.floor((x / itemWidth) * 100) / 100;
+  if (timeNodeArray[0] && timeNodeArray[0].time) {
+    const time =
+      timeNodeArray[0].time.toMillis() +
+      diffCount * twoNodeDiffTime -
+      twoNodeDiffTime / 2;
+    return time;
+  } else {
+    return 0;
+  }
+}
+
+export {
+  datePlus,
+  getDispTime,
+  getFixDate,
+  getNodeX,
+  getNodeColumn,
+  getTimeByX,
+};
