@@ -132,6 +132,7 @@ export const Timeline: FC<TimelineProps> = ({
   timeLevels = defaultTimeLevels,
   initTime = new Date().getTime(),
   backgroundColor = '#F2F2F2',
+  shiftX = 0,
   nodeList,
   nodeHeight,
   handleDateChanged,
@@ -414,7 +415,7 @@ export const Timeline: FC<TimelineProps> = ({
       if (Math.abs(movedX) < 8) {
         return;
       }
-      setHoverX(e.clientX - containerRef.current.offsetLeft);
+      setHoverX(e.clientX - containerRef.current.offsetLeft + shiftX);
       setHoverY(e.clientY - containerRef.current.offsetTop);
     }
   };
@@ -656,10 +657,12 @@ export const Timeline: FC<TimelineProps> = ({
           style={{
             position: 'absolute',
             left: `${hoverX - 50}px`,
-            top: '8px',
+            top: '32px',
             color: '#FF4500',
             fontSize: '10px',
             fontWeight: 800,
+            whiteSpace: 'nowrap',
+            zIndex: 999,
           }}
         >
           {DateTime.fromMillis(

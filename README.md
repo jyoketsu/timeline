@@ -14,7 +14,7 @@
 
 ## Screenshot
 
-[![fnkSqf.png](https://z3.ax1x.com/2021/08/06/fnkSqf.png)](https://imgtu.com/i/fnkSqf)
+[![fMg2wD.png](https://z3.ax1x.com/2021/08/07/fMg2wD.png)](https://imgtu.com/i/fMg2wD)
 
 ## [live demo](https://jyoketsu.github.io/timeline/)
 
@@ -52,6 +52,8 @@ import TimeLevel from '@jyoketsu/timeline-react/dist/interface/TimeLevel';
 | timeLevels        | 时间等级列表         | TimeLevel[]               | 否       | 见下                   |
 | initTimeLevel     | 初始化时间等级       | TimeLevel                 | 否       | `timeLevels[0]`        |
 | initTime          | 初始化时间           | number (Millis Timestamp) | 否       | `new Date().getTime()` |
+| backgroundColor   | 背景色               | string                    | 否       | `#2C3C4E`              |
+| shiftX            | 横向偏移             | number                    | 否       | `0`                    |
 | nodeList          | 时间轴中的子节点列表 | NodeItem[]                | 是       | -                      |
 | nodeHeight        | 子节点元素高度       | number                    | 是       | -                      |
 | handleDateChanged | 数据变化事件         | DateChangedFunc           | 否       | -                      |

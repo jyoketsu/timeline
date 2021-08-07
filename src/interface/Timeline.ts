@@ -14,6 +14,7 @@ export default interface TimelineProps extends HTMLAttributes<HTMLDivElement> {
   // 时间轴默认开始时间
   initTime?: number;
   backgroundColor?: string;
+  shiftX?: number;
   // 节点列表
   nodeList: NodeItem[];
   nodeHeight: number;
