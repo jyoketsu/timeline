@@ -30,9 +30,10 @@ function Item({ text }: Props) {
         height: '20px',
         lineHeight: '20px',
         padding: '0 8px',
-        border: '1px solid #797979',
+        border: '1px solid #c7c7c7',
         borderRadius: '4px 4px 4px 0',
-        backgroundColor: '#DCDCDC',
+        backgroundColor: '#e5e5e5',
+        color: '#969696',
         transition: 'all 0.5s',
         cursor: 'pointer',
       }}
