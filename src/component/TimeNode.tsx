@@ -14,8 +14,8 @@ export default function TimeNode({
         x={x + (itemWidth || 100) / 2}
         y={isKeyDate ? 40 : 26}
         fontSize={isKeyDate ? 12 : 10}
-        fontWeight="800"
-        fill={isKeyDate ? '#808080' : '#C0C0C0'}
+        fontWeight={isKeyDate ? '800' : 'normal'}
+        fill={isKeyDate ? '#808080' : '#9d9d9d'}
         style={{ userSelect: 'none' }}
         textAnchor="middle"
       >

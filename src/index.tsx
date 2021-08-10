@@ -23,6 +23,7 @@ import Icon from './icon';
 import NodeGroupItem from './interface/NodeGroupItem';
 import TimeNodes from './component/TimeNodes';
 import usePrevious from './hook/usePrevious';
+import VerticalBars from './component/VerticalBars';
 
 // Please do not use types off of a default export module or else Storybook Docs will suffer.
 // see: https://github.com/storybookjs/storybook/issues/9556
@@ -48,6 +49,7 @@ const classes: ReactStyle = {
     outline: 'none',
   },
   wrapper: {
+    position: 'relative',
     width: '100%',
     height: '100%',
     display: 'grid',
@@ -147,6 +149,7 @@ export const Timeline = React.forwardRef(
       nodeHeight,
       handleDateChanged,
       handleClickAdd,
+      wheelable = true,
     }: TimelineProps,
     ref
   ) => {
@@ -593,15 +596,25 @@ export const Timeline = React.forwardRef(
 
     const contentNodes = useMemo(
       () => (
-        <div style={classes.contentWrapper}>
-          <TimeNodes
-            nodeGroups={nodeGroups}
-            itemWidth={ITEM_WIDTH}
-            itemHeight={nodeHeight}
-            selectedKey={selectedNodeKey}
-            handleClickNode={handleClickNode}
-          />
-        </div>
+        <TimeNodes
+          nodeGroups={nodeGroups}
+          itemWidth={ITEM_WIDTH}
+          itemHeight={nodeHeight}
+          selectedKey={selectedNodeKey}
+          handleClickNode={handleClickNode}
+        />
+      ),
+      [nodeGroups]
+    );
+
+    const contentVerticalBars = useMemo(
+      () => (
+        <VerticalBars
+          nodeGroups={nodeGroups}
+          itemWidth={ITEM_WIDTH}
+          itemHeight={nodeHeight}
+          selectedKey={selectedNodeKey}
+        />
       ),
       [nodeGroups]
     );
@@ -632,6 +645,20 @@ export const Timeline = React.forwardRef(
       }
     };
 
+    const handleWheel = (e: any) => {
+      if (wheelable) {
+        clearTimeout(timeout);
+        const up = e.deltaY < 0;
+        timeout = setTimeout(() => {
+          if (up) {
+            handleChangeLevel(false);
+          } else {
+            handleChangeLevel(true);
+          }
+        }, 200);
+      }
+    };
+
     return (
       <div
         style={{
@@ -655,38 +682,8 @@ export const Timeline = React.forwardRef(
         onKeyDown={handleKeyDown}
         onKeyUp={handleKeyUp}
         onClick={clickAdd}
+        onWheel={handleWheel}
       >
-        <div
-          style={{
-            ...classes.wrapper,
-            ...{
-              transition: transition
-                ? `transform ${ANIME_TIME / 1000}s ease-out`
-                : 'unset',
-              transform: `translateX(${translateX}px)`,
-            },
-          }}
-        >
-          {contentNodes}
-          {timeline}
-        </div>
-        <div style={classes.actionButtonWrapper}>
-          <div
-            style={classes.zoomIn}
-            onClick={(e) => handleChangeLevel(false, e)}
-          >
-            <Icon name="zoomIn" width={22} height={22} />
-          </div>
-          <div
-            style={classes.zoomOut}
-            onClick={(e) => handleChangeLevel(true, e)}
-          >
-            <Icon name="zoomOut" width={22} height={22} />
-          </div>
-          <div style={classes.home} onClick={handleToHome}>
-            <Icon name="home" width={18} height={18} />
-          </div>
-        </div>
         {hoverX && !started && draggable && handleClickAdd ? (
           <div
             style={{
@@ -702,7 +699,7 @@ export const Timeline = React.forwardRef(
             style={{
               position: 'absolute',
               left: `${hoverX - 11}px`,
-              top: `${hoverY - 33}px`,
+              top: `${hoverY - 23}px`,
             }}
           >
             <Icon name="plus" width={22} height={22} fill="#FF4500" />
@@ -730,6 +727,40 @@ export const Timeline = React.forwardRef(
             ).toFormat('yyyy-LL-dd T')}
           </span>
         ) : null}
+        <div
+          style={{
+            ...classes.wrapper,
+            ...{
+              transition: transition
+                ? `transform ${ANIME_TIME / 1000}s ease-out`
+                : 'unset',
+              transform: `translateX(${translateX}px)`,
+            },
+          }}
+        >
+          <div style={classes.contentWrapper}>
+            {contentVerticalBars}
+            {contentNodes}
+          </div>
+          {timeline}
+        </div>
+        <div style={classes.actionButtonWrapper}>
+          <div
+            style={classes.zoomIn}
+            onClick={(e) => handleChangeLevel(false, e)}
+          >
+            <Icon name="zoomIn" width={22} height={22} />
+          </div>
+          <div
+            style={classes.zoomOut}
+            onClick={(e) => handleChangeLevel(true, e)}
+          >
+            <Icon name="zoomOut" width={22} height={22} />
+          </div>
+          <div style={classes.home} onClick={handleToHome}>
+            <Icon name="home" width={18} height={18} />
+          </div>
+        </div>
       </div>
     );
   }

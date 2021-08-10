@@ -33,7 +33,8 @@ function Item({ text }: Props) {
         border: '1px solid #c7c7c7',
         borderRadius: '4px 4px 4px 0',
         backgroundColor: '#e5e5e5',
-        color: '#969696',
+        // color: '#969696',
+        color: '#FF4500',
         transition: 'all 0.5s',
         cursor: 'pointer',
       }}

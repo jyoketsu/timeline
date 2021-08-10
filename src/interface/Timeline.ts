@@ -20,6 +20,7 @@ export default interface TimelineProps extends HTMLAttributes<HTMLDivElement> {
   nodeHeight: number;
   handleDateChanged?: DateChangedFunc;
   handleClickAdd?: ClickAddFunc;
+  wheelable?: boolean;
   ref?: any;
 }
 

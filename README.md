@@ -58,6 +58,8 @@ import TimeLevel from '@jyoketsu/timeline-react/dist/interface/TimeLevel';
 | nodeHeight        | 子节点元素高度       | number                    | 是       | -                      |
 | handleDateChanged | 数据变化事件         | DateChangedFunc           | 否       | -                      |
 | handleClickAdd    | 点击添加按钮         | ClickAddFunc              | 否       | -                      |
+| wheelable         | 是否可以滚动缩放     | boolean                   | 否       | `true`                 |
+| ref               | ref                  |                           | 否       | -                      |
 
 ### TimeLevel
 
