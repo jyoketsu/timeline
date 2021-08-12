@@ -175,4 +175,5 @@ export {
   getNodeX,
   getNodeColumn,
   getTimeByX,
+  getTwoNodeDiffTime
 };

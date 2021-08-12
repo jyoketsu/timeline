@@ -16,6 +16,7 @@ import {
   getNodeColumn,
   getNodeX,
   getTimeByX,
+  getTwoNodeDiffTime,
 } from './services/util';
 import TimeLevel from './interface/TimeLevel';
 import TimeNodeProps from './interface/TimeNode';
@@ -163,6 +164,7 @@ export const Timeline = React.forwardRef(
     const [translateX, setTranslateX] = useState(0);
     const preTranslateX: any = usePrevious(translateX);
     const [transition, setTransition] = useState(true);
+    // 初始化时间（红点）的x位置
     const [initTimeX, setInitTimeX] = useState<number | null>(null);
     const [nodeGroups, setNodeGroups] = useState<NodeGroupItem[][]>([]);
     const [started, setStarted] = useState(false);
@@ -172,6 +174,8 @@ export const Timeline = React.forwardRef(
     );
     const [hoverX, setHoverX] = useState(0);
     const [hoverY, setHoverY] = useState(0);
+    const [zoomRatio, setZoomRatio] = useState(1);
+    const [transformOrigin, setTransformOrigin] = useState(0);
 
     // 暴露方法
     useImperativeHandle(ref, () => ({
@@ -228,31 +232,6 @@ export const Timeline = React.forwardRef(
         }
       }
     }, [perPage, startTime, currentTimeLevel]);
-
-    // useEffect(() => {
-    //   if (handleSelectedDateChanged && clickX) {
-    //     const ratio =
-    //       (clickX + Math.abs(translateX)) / (perPage * 3 * ITEM_WIDTH);
-    //     const startNode = timeNodeArray[0];
-    //     const endNode = timeNodeArray[timeNodeArray.length - 1];
-    //     if (startNode.time && endNode.time) {
-    //       const timeDiff =
-    //         datePlus(
-    //           endNode.time,
-    //           currentTimeLevel.dateUnit,
-    //           currentTimeLevel.amount
-    //         ).toMillis() - startNode.time.toMillis();
-    //       const clickTime =
-    //         datePlus(
-    //           startNode.time,
-    //           currentTimeLevel.dateUnit,
-    //           -currentTimeLevel.amount / 2
-    //         ).toMillis() +
-    //         timeDiff * ratio;
-    //       handleSelectedDateChanged(clickTime);
-    //     }
-    //   }
-    // }, [clickX, translateX, perPage, timeNodeArray]);
 
     useEffect(() => {
       if (timeNodeArray.length) {
@@ -333,7 +312,11 @@ export const Timeline = React.forwardRef(
     //   }
     // };
 
-    const handleChangeLevel = (zoomIn: boolean, e?: React.MouseEvent) => {
+    const handleChangeLevel = (
+      zoomIn: boolean,
+      mouseZoom?: boolean,
+      e?: React.MouseEvent
+    ) => {
       if (e) {
         e.stopPropagation();
       }
@@ -346,31 +329,37 @@ export const Timeline = React.forwardRef(
       ) {
         return;
       }
-      setTranslateX(-perPage * ITEM_WIDTH);
-      setCurrentTimeLevel(timeLevels[zoomIn ? index + 1 : index - 1]);
-      if (clickX) {
-        const ratio =
-          (clickX + Math.abs(translateX)) / (perPage * 3 * ITEM_WIDTH);
-        const startNode = timeNodeArray[0];
-        const endNode = timeNodeArray[timeNodeArray.length - 1];
-        if (startNode.time && endNode.time) {
-          const timeDiff =
-            datePlus(
-              endNode.time,
-              currentTimeLevel.dateUnit,
-              currentTimeLevel.amount
-            ).toMillis() - startNode.time.toMillis();
-          const clickTime =
-            datePlus(
-              startNode.time,
-              currentTimeLevel.dateUnit,
-              -currentTimeLevel.amount / 2
-            ).toMillis() +
-            timeDiff * ratio;
-          setStartTime(DateTime.fromMillis(clickTime));
+      const hoverPosition = mouseZoom
+        ? hoverX - translateX
+        : ((perPage * 3) / 2) * ITEM_WIDTH;
+      setTransformOrigin(hoverPosition);
+      setZoomRatio(zoomIn ? 0.9 : 1.1);
+      setTimeout(() => {
+        setTimeNodeArray([]);
+        setNodeGroups([]);
+        setZoomRatio(1);
+        const nextLevel = timeLevels[zoomIn ? index + 1 : index - 1];
+        if (mouseZoom && hoverX) {
+          const hoverTime = getTimeByX(
+            hoverPosition,
+            ITEM_WIDTH,
+            timeNodeArray,
+            currentTimeLevel
+          );
+          const middlePosition = Math.floor((perPage * 3) / 2) * ITEM_WIDTH;
+          const diffPosition = hoverPosition - middlePosition;
+          const twoNodeDiffTime = getTwoNodeDiffTime(nextLevel);
+          // 获取diffTime
+          // ITEM_WIDTH=twoNodeDiffTime
+          // diffPosition=diffTime
+          // diffTime=(twoNodeDiffTime*diffPosition)ITEM_WIDTH
+          const diffTime = (twoNodeDiffTime * diffPosition) / ITEM_WIDTH;
+          const middleTime = hoverTime - diffTime;
+          setStartTime(DateTime.fromMillis(middleTime));
+          setTranslateX(-perPage * ITEM_WIDTH);
         }
-      }
-      // setClickX(null);
+        setCurrentTimeLevel(nextLevel);
+      }, ANIME_TIME);
     };
 
     const handleToHome = (e: React.MouseEvent) => {
@@ -384,13 +373,6 @@ export const Timeline = React.forwardRef(
         setTranslateX(-perPage * ITEM_WIDTH);
       }, ANIME_TIME);
     };
-
-    // const handleClick = (event: React.MouseEvent) => {
-    //   event.stopPropagation();
-    //   if (containerRef && containerRef.current) {
-    //     // setClickX(event.nativeEvent.offsetX + translateX);
-    //   }
-    // };
 
     const handleMoveStart = (e: React.MouseEvent<HTMLElement>) => {
       if (!draggable) {
@@ -507,6 +489,12 @@ export const Timeline = React.forwardRef(
             viewBox={`0 0 ${perPage * 3 * ITEM_WIDTH} ${TIMELINE_HEIGHT}`}
             width={perPage * 3 * ITEM_WIDTH}
             height={TIMELINE_HEIGHT}
+            style={{
+              transform: `scale(${zoomRatio},1)`,
+              transformOrigin: `${transformOrigin}px center`,
+              transition:
+                zoomRatio === 1 ? 'none' : `transform ${ANIME_TIME / 1000}s`,
+            }}
           >
             <defs>
               <g
@@ -591,7 +579,7 @@ export const Timeline = React.forwardRef(
           </svg>
         </div>
       ),
-      [timeNodeArray, nodeGroups]
+      [timeNodeArray, nodeGroups, zoomRatio, transformOrigin]
     );
 
     const contentNodes = useMemo(
@@ -651,9 +639,9 @@ export const Timeline = React.forwardRef(
         const up = e.deltaY < 0;
         timeout = setTimeout(() => {
           if (up) {
-            handleChangeLevel(false);
+            handleChangeLevel(false, true);
           } else {
-            handleChangeLevel(true);
+            handleChangeLevel(true, true);
           }
         }, 200);
       }
@@ -738,7 +726,17 @@ export const Timeline = React.forwardRef(
             },
           }}
         >
-          <div style={classes.contentWrapper}>
+          <div
+            style={{
+              ...classes.contentWrapper,
+              ...{
+                transform: `scale(${zoomRatio},1)`,
+                transformOrigin: `${transformOrigin}px center`,
+                transition:
+                  zoomRatio === 1 ? 'none' : `transform ${ANIME_TIME / 1000}s`,
+              },
+            }}
+          >
             {contentVerticalBars}
             {contentNodes}
           </div>
@@ -747,13 +745,13 @@ export const Timeline = React.forwardRef(
         <div style={classes.actionButtonWrapper}>
           <div
             style={classes.zoomIn}
-            onClick={(e) => handleChangeLevel(false, e)}
+            onClick={(e) => handleChangeLevel(false, false, e)}
           >
             <Icon name="zoomIn" width={22} height={22} />
           </div>
           <div
             style={classes.zoomOut}
-            onClick={(e) => handleChangeLevel(true, e)}
+            onClick={(e) => handleChangeLevel(true, false, e)}
           >
             <Icon name="zoomOut" width={22} height={22} />
           </div>
