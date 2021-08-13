@@ -21,6 +21,8 @@ export default interface TimelineProps extends HTMLAttributes<HTMLDivElement> {
   handleDateChanged?: DateChangedFunc;
   handleClickAdd?: ClickAddFunc;
   wheelable?: boolean;
+  // 切换timeLevel时清空数据并在新的数据获得前不要重新渲染
+  changeLevelRequestData?: boolean;
   ref?: any;
 }
 

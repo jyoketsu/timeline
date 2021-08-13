@@ -151,6 +151,7 @@ export const Timeline = React.forwardRef(
       handleDateChanged,
       handleClickAdd,
       wheelable = true,
+      changeLevelRequestData = false,
     }: TimelineProps,
     ref
   ) => {
@@ -176,10 +177,12 @@ export const Timeline = React.forwardRef(
     const [hoverY, setHoverY] = useState(0);
     const [zoomRatio, setZoomRatio] = useState(1);
     const [transformOrigin, setTransformOrigin] = useState(0);
+    const [rerenderNodes, setRerenderNodes] = useState(true);
 
     // 暴露方法
     useImperativeHandle(ref, () => ({
       handleChangeLevel,
+      handleClickMoveButton,
     }));
 
     useEffect(() => {
@@ -241,7 +244,13 @@ export const Timeline = React.forwardRef(
     }, [timeNodeArray]);
 
     useEffect(() => {
-      if (perPage && timeNodeArray.length) {
+      // 切换timeLevel时清空数据并在新的数据获得前不要重新渲染
+      setRerenderNodes(true);
+    }, [nodeList]);
+
+    // 生成timeNodeArray
+    useEffect(() => {
+      if (rerenderNodes && perPage && timeNodeArray.length) {
         const startDateNode = timeNodeArray[0];
         const columnCount = perPage * 3;
         let nodeGroups: NodeGroupItem[][] = new Array(columnCount);
@@ -271,46 +280,50 @@ export const Timeline = React.forwardRef(
       return () => {
         setNodeGroups([]);
       };
-    }, [nodeList, perPage, timeNodeArray]);
+    }, [nodeList, perPage, timeNodeArray, rerenderNodes]);
 
     // 点击左右移动按钮
-    // const handleClickMoveButton = (next: boolean, e: React.MouseEvent) => {
-    //   e.stopPropagation();
-    //   if (
-    //     !transition ||
-    //     translateX === 0 ||
-    //     translateX === -perPage * 2 * ITEM_WIDTH
-    //   ) {
-    //     return;
-    //   }
-    //   // 移动一个元素的宽度
-    //   setTranslateX((prevX) => (next ? prevX + ITEM_WIDTH : prevX - ITEM_WIDTH));
+    const handleClickMoveButton = (next: boolean, e: React.MouseEvent) => {
+      if (e) {
+        e.stopPropagation();
+      }
+      if (
+        !transition ||
+        translateX === 0 ||
+        translateX === -perPage * 2 * ITEM_WIDTH
+      ) {
+        return;
+      }
+      // 移动一个元素的宽度
+      setTranslateX((prevX) =>
+        next ? prevX + ITEM_WIDTH : prevX - ITEM_WIDTH
+      );
 
-    //   // 如果移到头了
-    //   if (
-    //     // 往右边到头
-    //     (next && translateX + ITEM_WIDTH === 0) ||
-    //     // 往左边到头
-    //     (!next && translateX - ITEM_WIDTH === -perPage * 2 * ITEM_WIDTH)
-    //   ) {
-    //     setTimeout(() => {
-    //       setTransition(false);
-    //       setStartTime((prevStartTime) =>
-    //         datePlus(
-    //           prevStartTime,
-    //           currentTimeLevel.dateUnit,
-    //           next
-    //             ? -currentTimeLevel.amount * perPage
-    //             : currentTimeLevel.amount * perPage
-    //         )
-    //       );
-    //       setTranslateX(-perPage * ITEM_WIDTH);
-    //       setTimeout(() => {
-    //         setTransition(true);
-    //       }, ANIME_TIME);
-    //     }, ANIME_TIME);
-    //   }
-    // };
+      // 如果移到头了
+      if (
+        // 往右边到头
+        (next && translateX + ITEM_WIDTH === 0) ||
+        // 往左边到头
+        (!next && translateX - ITEM_WIDTH === -perPage * 2 * ITEM_WIDTH)
+      ) {
+        setTimeout(() => {
+          setTransition(false);
+          setStartTime((prevStartTime) =>
+            datePlus(
+              prevStartTime,
+              currentTimeLevel.dateUnit,
+              next
+                ? -currentTimeLevel.amount * perPage
+                : currentTimeLevel.amount * perPage
+            )
+          );
+          setTranslateX(-perPage * ITEM_WIDTH);
+          setTimeout(() => {
+            setTransition(true);
+          }, ANIME_TIME);
+        }, ANIME_TIME);
+      }
+    };
 
     const handleChangeLevel = (
       zoomIn: boolean,
@@ -335,6 +348,9 @@ export const Timeline = React.forwardRef(
       setTransformOrigin(hoverPosition);
       setZoomRatio(zoomIn ? 0.9 : 1.1);
       setTimeout(() => {
+        if (changeLevelRequestData) {
+          setRerenderNodes(false);
+        }
         setTimeNodeArray([]);
         setNodeGroups([]);
         setZoomRatio(1);
@@ -356,9 +372,11 @@ export const Timeline = React.forwardRef(
           const diffTime = (twoNodeDiffTime * diffPosition) / ITEM_WIDTH;
           const middleTime = hoverTime - diffTime;
           setStartTime(DateTime.fromMillis(middleTime));
+          setCurrentTimeLevel(nextLevel);
           setTranslateX(-perPage * ITEM_WIDTH);
+        } else {
+          setCurrentTimeLevel(nextLevel);
         }
-        setCurrentTimeLevel(nextLevel);
       }, ANIME_TIME);
     };
 
